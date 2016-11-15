@@ -10,11 +10,6 @@ Deploy Nextcloud on Ubuntu 16.04 using nginx, php-fpm, postgresql
 7. Run the nc01.yml playbook
 8. Done.
 
-!!! The nextcloud role (as of yet) is not intended to be used in consecutive runs of a playbook !!!
-
-It runs the nextcloud installer which assumes an empty database and fails otherwise.
-Either drop the database an remove both the nextcloud_DocRoot and nextcloud_DataDir folders or disable the role in the playbook (i.e. comment it out).
-
 
 ## Disclaimer
 Use at your own risk! I am not responsible for any data loss or other problems when you use code from this repository.
