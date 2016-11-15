@@ -1,0 +1,29 @@
+---
+
+
+- name: reconfigure nextcloud vhost with https
+  template: src=nextcloud_letsencrypt.vhost.j2 dest=/etc/nginx/sites-available/nextcloud owner=root group=root mode=0644
+  notify:
+    - reload nginx
+
+- name: obtain letsencrypt certificate
+  command: "letsencrypt --agree-tos --non-interactive certonly --email {{ nextcloud.contact }} --rsa-key-size 4096 --webroot -w {{ letsencrypt_validation_dir }} -d {{ nextcloud.domain }} --expand"
+  args:
+    creates: "/etc/letsencrypt/live/{{ nextcloud.domain }}"
+  notify:
+    - reconfigure nextcloud vhost with https
+
+- name: restart nginx
+  service: name=nginx state=restarted
+
+- name: restart nginx and obtain cert
+  service: name=nginx state=restarted
+  notify:
+    - obtain letsencrypt certificate
+    - reconfigure nextcloud vhost with https
+
+- name: reload nginx
+  service: name=nginx state=reloaded
+
+- name: daemon reload
+  command: systemctl daemon-reload

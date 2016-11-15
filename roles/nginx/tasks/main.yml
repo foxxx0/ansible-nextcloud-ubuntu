@@ -1,0 +1,55 @@
+---
+
+- name: install nginx
+  apt: name=nginx,letsencrypt state=installed
+
+- name: configure nginx
+  copy: src=nginx.conf dest=/etc/nginx/nginx.conf owner=root group=root mode=0644
+  notify:
+    - restart nginx
+
+- name: snippets directory
+  file: state=directory path=/etc/nginx/snippets owner=root group=root mode=0755
+
+- name: copy snippets
+  copy: src={{ item }} dest=/etc/nginx/snippets owner=root group=root mode=0644
+  with_items:
+    - sslsettings.conf
+
+- name: configure letsencrypt snippet
+  template: src=letsencrypt.conf.j2 dest=/etc/nginx/snippets/letsencrypt.conf owner=root group=root mode=0644
+
+- name: ensure sites-available directory
+  file: state=directory path=/etc/nginx/sites-available owner=root group=root mode=0755
+
+- name: ensure sites-enabled directory
+  file: state=directory path=/etc/nginx/sites-enabled owner=root group=root mode=0755
+
+- name: create unique DH group
+  command: openssl dhparam -out /etc/ssl/dhparams.pem 2048 creates=/etc/ssl/dhparams.pem
+
+- name: create directory to store validation stuff in
+  file: owner=root group=www-data mode=0750 path={{ letsencrypt_validation_dir }} state=directory
+
+- name: create letsencrypt config directory
+  file: state=directory path=/etc/letsencrypt owner=root group=root mode=0755
+
+- name: install letsencrypt hook
+  copy: src=hook.sh dest=/etc/letsencrypt/hook.sh owner=root group=root mode=0755
+
+- name: create letsencrypt hook dir
+  file: state=directory path=/etc/letsencrypt/hook.d owner=root group=root mode=0755
+
+- name: install letsencrypt renewal service
+  copy: src={{ item }} dest=/etc/systemd/system/{{ item }} owner=root group=root mode=0644
+  with_items:
+    - letsencrypt-renewal.service
+    - letsencrypt-renewal.timer
+  notify:
+    - daemon reload
+
+- name: activate letsencrypt renewal service
+  service: name=letsencrypt-renewal.timer enabled=yes state=started
+
+- name: enable nginx
+  service: name=nginx enabled=yes

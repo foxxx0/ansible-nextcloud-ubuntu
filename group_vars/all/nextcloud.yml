@@ -1,0 +1,14 @@
+---
+
+nextcloud:
+  domain: "cloud.example.com"
+  custom_bgImage: False # make sure to put it in roles/nextcloud/files/nc_login_page_bg.jpg or modify the task before enabling!
+  name: "SomeCloud"
+  slogan: "yayyy cloud!"
+  contact: "webmaster@exmaple.com"
+  dbtype: "pgsql"
+  admin_user: "admin"
+  admin_pass: "admin"
+  passwordsalt: "saltysaltysaltysaltysalt"
+  secret: "secretsecretsecretsecretsecret"
+  instanceid: "aaaaaaaaaaaa"

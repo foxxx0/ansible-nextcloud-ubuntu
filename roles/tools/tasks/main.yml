@@ -1,0 +1,2 @@
+- name: install useful tools and utilities
+  apt: name=haveged,lsof,htop,rsync,tmux,mtr,tree,ncdu,nmap,sysstat,vnstat,screen,dnsutils state=installed update_cache=false

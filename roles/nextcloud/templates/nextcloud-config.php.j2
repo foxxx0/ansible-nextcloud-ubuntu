@@ -1,0 +1,24 @@
+<?php
+$CONFIG = array (
+  'passwordsalt' => '{{ nextcloud.passwordsalt }}',
+  'secret' => '{{ nextcloud.secret }}',
+  'trusted_domains' =>
+  array (
+    0 => '{{ nextcloud.domain }}',
+  ),
+  'datadirectory' => '{{ nextcloud_DataDir }}',
+  'overwrite.cli.url' => 'http://{{ nextcloud.domain }}',
+  'dbtype' => '{{ nextcloud.dbtype }}',
+  'version' => '9.1.1.5',
+  'dbname' => 'nextcloud',
+  'dbhost' => 'localhost',
+  'dbport' => '',
+  'dbtableprefix' => 'oc_',
+  'dbuser' => 'nextcloud',
+  'dbpassword' => '{{ postgres_users.nextcloud }}',
+  'logtimezone' => 'UTC',
+  'installed' => true,
+  'instanceid' => '{{ nextcloud.instanceid }}',
+  'forcessl' => false,
+);
+?>

@@ -1,0 +1,7 @@
+---
+
+- name: restart php-fpm
+  service: name=php{{ php_version }}-fpm state=restarted
+
+- name: daemon reload
+  command: systemctl daemon-reload

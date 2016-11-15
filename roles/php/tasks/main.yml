@@ -1,0 +1,22 @@
+---
+
+- name: install php
+  apt: name=php,php-common,php-fpm,php-xml,php-gd,php-json,libxml2,php-mbstring,php-zip,php-pgsql,php-curl,php-bz2,php-intl,php-mcrypt,php-ldap,php-smb,php-imap,php-gmp,php-apcu,php-memcached,php-redis,php-imagick,php-bcmath,php-date,php-dba state=installed
+
+- name: configure php-fpm
+  copy: src={{ item }} dest=/etc/php/7.0/fpm/{{ item }} owner=root group=root mode=0644
+  with_items:
+    - php.ini
+    - php-fpm.conf
+  notify:
+    - restart php-fpm
+
+- name: configure php-cli
+  copy: src={{ item }} dest=/etc/php/7.0/cli/{{ item }} owner=root group=root mode=0644
+  with_items:
+    - php.ini
+
+- name: install browscap.ini
+  copy: src={{ item }} dest=/etc/php/{{ item }} owner=root group=root mode=0644
+  with_items:
+    - browscap.ini

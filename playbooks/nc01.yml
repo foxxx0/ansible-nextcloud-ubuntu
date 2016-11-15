@@ -1,0 +1,16 @@
+---
+
+- name: setup nc01
+  hosts: nc01
+  roles:
+    - { role: tools, tags: ['tools'] }
+    - { role: nginx, tags: ['nginx'] }
+    - { role: postgres, tags: ['postgres'] }
+    - { role: php, tags: ['php'] }
+    - { role: nextcloud,
+        nextcloud_version: "10.0.1",
+        nextcloud_DocRoot: "/var/www/nextcloud",
+        nextcloud_DataDir: "/var/lib/nextcloud",
+        use_letsencrypt: False,
+        tags: ['nextcloud'] }
+

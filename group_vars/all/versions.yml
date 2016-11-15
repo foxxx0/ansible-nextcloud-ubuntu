@@ -1,0 +1,4 @@
+---
+
+pgsql_version: "9.5"
+php_version: "7.0"
