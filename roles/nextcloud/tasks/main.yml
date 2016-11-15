@@ -18,6 +18,8 @@
   unarchive: src=/tmp/nextcloud-{{ nextcloud_version }}.tar.bz2
              dest={{ nextcloud_DocRoot | dirname }}
              copy=no
+  args:
+    creates: "{{ nextcloud_DocRoot }}/core"
 
 - name: ensure root directories
   file: path={{ item }} state=directory owner=www-data group=www-data mode=0750
@@ -70,37 +72,68 @@
   command: '{{ nextcloud_DocRoot }}/occ maintenance:install --no-interaction --data-dir "{{ nextcloud_DataDir }}" --database "{{ nextcloud.dbtype }}" --database-name "nextcloud" --database-user "nextcloud" --database-pass "{{ postgres_users.nextcloud }}" --admin-user "{{ nextcloud.admin_user }}" --admin-pass "{{ nextcloud.admin_pass }}"'
   args:
     chdir: "{{ nextcloud_DocRoot }}"
+    creates: "{{ nextcloud_DataDir}}/.ocdata"
   become: yes
   become_user: www-data
 
 - name: configure nextcloud
   template: src=nextcloud-config.php.j2 dest={{ nextcloud_DocRoot }}/config/config.php owner=www-data group=www-data mode=0640
 
-- name: add unique index to oc_appconfig(appid,configkey) for UPSERT queries
-  command: "psql nextcloud -c \"SET ROLE nextcloud; CREATE UNIQUE INDEX idx_oc_appconfig_appid_configkey ON oc_appconfig(appid,configkey);\""
-  become: yes
-  become_user: postgres
-
 - name: upload nextcloud login-page image
   copy: src=nc_login_page_bg.jpg dest=/var/lib/nextcloud/themedbackgroundlogo owner=www-data group=www-data mode=0640
+
+- name: check nextcloud login-page image
+  command: "psql --no-align --tuples-only nextcloud -c \"SET ROLE nextcloud; SELECT configvalue FROM oc_appconfig WHERE appid='theming' AND configkey='backgroundMime';\""
+  register: nextcloud_bgImage_status
+  become: yes
+  become_user: postgres
+  changed_when: not nextcloud_bgImage_status.stdout == "image/jpeg"
 
 - name: set nextcloud login-page image
   command: "psql nextcloud -c \"SET ROLE nextcloud; INSERT INTO oc_appconfig(appid,configkey,configvalue) VALUES ('theming','backgroundMime','image/jpeg') ON CONFLICT (appid,configkey) DO UPDATE SET configvalue='image/jpeg';\""
   become: yes
   become_user: postgres
-  when: nextcloud.custom_bgImage
+  when: nextcloud_bgImage_status | changed
+
+- name: check nextcloud login-page name
+  command: "psql --no-align --tuples-only nextcloud -c \"SET ROLE nextcloud; SELECT configvalue FROM oc_appconfig WHERE appid='theming' AND configkey='name';\""
+  register: nextcloud_name_status
+  become: yes
+  become_user: postgres
+  changed_when: not nextcloud_name_status.stdout == "{{ nextcloud.name }}"
 
 - name: set nextcloud login-page name
   command: "psql nextcloud -c \"SET ROLE nextcloud; INSERT INTO oc_appconfig(appid,configkey,configvalue) VALUES ('theming','name','{{ nextcloud.name }}') ON CONFLICT (appid,configkey) DO UPDATE SET configvalue='{{ nextcloud.name }}';\""
   become: yes
   become_user: postgres
+  when: nextcloud_name_status | changed
+
+- name: check nextcloud login-page slogan
+  command: "psql --no-align --tuples-only nextcloud -c \"SET ROLE nextcloud; SELECT configvalue FROM oc_appconfig WHERE appid='theming' AND configkey='slogan';\""
+  register: nextcloud_slogan_status
+  become: yes
+  become_user: postgres
+  changed_when: not nextcloud_slogan_status.stdout == "{{ nextcloud.slogan }}"
 
 - name: set nextcloud login-page slogan
   command: "psql nextcloud -c \"SET ROLE nextcloud; INSERT INTO oc_appconfig(appid,configkey,configvalue) VALUES ('theming','slogan','{{ nextcloud.slogan }}') ON CONFLICT (appid,configkey) DO UPDATE SET configvalue='{{ nextcloud.slogan }}';\""
   become: yes
   become_user: postgres
+  when: nextcloud_slogan_status | changed
 
-- name: set nextcloud login-page url
-  command: "psql nextcloud -c \"SET ROLE nextcloud; INSERT INTO oc_appconfig(appid,configkey,configvalue) VALUES ('theming','url','http://{{ nextcloud.domain }}') ON CONFLICT (appid,configkey) DO UPDATE SET configvalue='http://{{ nextcloud.domain }}';\""
+- name: determine protocol for nextcloud login-page url
+  set_fact:
+    nextcloud_protocol: "{% if use_letsencrypt %}https{% else %}http{% endif %}"
+
+- name: check nextcloud login-page url
+  command: "psql --no-align --tuples-only nextcloud -c \"SET ROLE nextcloud; SELECT configvalue FROM oc_appconfig WHERE appid='theming' AND configkey='url';\""
+  register: nextcloud_url_status
   become: yes
   become_user: postgres
+  changed_when: not nextcloud_url_status.stdout == "{{ nextcloud_protocol }}://{{ nextcloud.domain }}"
+
+- name: set nextcloud login-page url
+  command: "psql nextcloud -c \"SET ROLE nextcloud; INSERT INTO oc_appconfig(appid,configkey,configvalue) VALUES ('theming','url','{{ nextcloud_protocol }}://{{ nextcloud.domain }}') ON CONFLICT (appid,configkey) DO UPDATE SET configvalue='{{ nextcloud_protocol }}://{{ nextcloud.domain }}';\""
+  become: yes
+  become_user: postgres
+  when: nextcloud_url_status | changed
